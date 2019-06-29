@@ -178,3 +178,8 @@ kubectl get nodes --all-namespaces
 kubectl get services --all-namespaces
 
 ```
+
+11. docker私有库继承到k8s
+```
+kubectl create secret docker-registry lrj-alyun --docker-server=registry.cn-beijing.aliyuncs.com --docker-username=***** --docker-password=****** --docker-email=sunny_lrj@yeah.net 
+```
