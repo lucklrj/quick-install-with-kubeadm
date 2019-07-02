@@ -1,0 +1,62 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd-ui
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: etcd-ui
+    spec:
+      containers:
+      - name: etcd-ui
+        image: registry.cn-beijing.aliyuncs.com/lucklrj/etcd-ui
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /k8s/etcd/ssl
+          name: etcd-ssl
+      volumes:
+      - name: etcd-ssl
+        hostPath:
+          path: /k8s/etcd/ssl
+      imagePullSecrets:
+      - name: lrj-aliyun
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-ui
+  namespace: default
+  labels:
+    app: etcd-ui
+spec:
+  ports:
+  - name: etcd-ui
+    protocol: TCP
+    port: 80
+    targetPort: 8111
+  selector:
+    app: etcd-ui
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: etcd-ui
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    ingress.kubernetes.io/auth-type: "basic"
+    ingress.kubernetes.io/auth-secret: "my-secret"
+spec:
+  rules:
+  - host: etcd-ui.fanjian8.com
+    http:
+      paths:
+      - backend:
+          serviceName: etcd-ui
+          servicePort: 80
