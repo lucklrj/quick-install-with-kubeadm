@@ -183,3 +183,42 @@ kubectl get services --all-namespaces
 ```
 kubectl create secret docker-registry lrj-alyun --docker-server=registry.cn-beijing.aliyuncs.com --docker-username=***** --docker-password=****** --docker-email=sunny_lrj@yeah.net 
 ```
+12. etcd管理面板 
+```
+#https://github.com/evildecay/etcdkeeper
+./etcdkeeper -p 8111  -usetls -cacert=/k8s/etcd/ssl/ca.pem  -cert=/k8s/etcd/ssl/server.pem -key=/k8s/etcd/ssl/server-key.pem -sep app -auth
+
+#安装htpasswd命令
+yum -y install httpd-tools
+htpasswd -c ./auth myusername
+kubectl create secret generic mysecret --from-file auth --namespace=monitoring 
+
+参看etcd-ui.yaml
+```
+
+13. NFS挂载
+```
+#安装
+yum install -y nfs-utils rpcbind
+
+vim /etc/exports
+追加内容：/k8s/kubernets/data *(rw,sync,no_root_squash)
+
+
+exportfs -r
+
+systemctl enable rpcbind
+systemctl start rpcbind
+
+systemctl enable nfs
+systemctl start nfs
+
+#查看共享点
+showmount -e 172.16.0.69
+
+#挂载磁盘
+mount -t nfs -o nolock k8s-master:/k8s/kubernets/data /k8s_data
+
+
+
+```
