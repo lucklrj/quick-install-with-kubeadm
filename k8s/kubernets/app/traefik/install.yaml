@@ -42,19 +42,6 @@ metadata:
   name: traefik-ingress-controller
   namespace: kube-system
 ---
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: traefik-conf
-  namespace: kube-system
-data:
-  traefik.toml: |
-    insecureSkipVerify = true
-    defaultEntryPoints = ["http"]
-    [entryPoints]
-      [entryPoints.http]
-      address = ":80"
----
 kind: DaemonSet
 apiVersion: extensions/v1beta1
 metadata:
@@ -76,12 +63,20 @@ spec:
       terminationGracePeriodSeconds: 60
       hostNetwork: true
       volumes:
+      - name: ssl
+        secret:
+          secretName: hicoffice-cert
       - name: config
         configMap:
           name: traefik-conf
       containers:
       - image: traefik:latest
-        name: traefik-ingress-lb
+        name: traefik-ingress-lib
+        volumeMounts:
+        - mountPath: "/ssl"
+          name: "ssl"
+        - mountPath: "/config"
+          name: "config"
         ports:
         - name: http
           containerPort: 80
@@ -95,9 +90,6 @@ spec:
         - -d
         - --web
         - --kubernetes
-        volumeMounts:
-        - mountPath: "/config"
-          name: "config"
 ---
 kind: Service
 apiVersion: v1
@@ -138,7 +130,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: ingress.fanjian8.com
+  - host: ingress.hi-coffice.com
     http:
       paths:
       - backend:

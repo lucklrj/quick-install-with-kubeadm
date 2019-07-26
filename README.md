@@ -10,6 +10,29 @@ k8s-node-1 | 172.16.0.70|-|
 k8s-node-2 | 172.16.0.71|-|
 
 
+##### 百度k8s环境 
+https://cloud.baidu.com 15882002095
+主机名  | 内网ip | 外网ip |
+:---|:---:|:---:|
+k8s-master| 172.16.0.69 |106.13.26.221|
+k8s-node-1 | 172.16.0.70|-|
+k8s-node-2 | 172.16.0.71|-|
+
+*etcd面板账号*  
+etcd-admin  
+Fx86F821Vmsr
+
+*jenkis账号*
+admin  
+os1Kh8e1jgwWXCRh
+
+*百度 镜像仓库密码*  
+[访问地址](https://console.bce.baidu.com/cce/?_=1561777471301#/cce/image/list)  
+账号：hicoffice  
+密码：GA%#xh@@bD@DwOJ4j
+
+--------
+
 1. 更新语言
 ```
 /etc/environment
@@ -133,11 +156,34 @@ systemctl start etcd
 #查看服务装填
 systemctl status etcd
 
+#切换etcd版本
+export ETCDCTL_API=2,[3]
+
+#v2操作命令
+
 #查看集群成员
-/k8s/etcd/bin/etcdctl --ca-file=/k8s/etcd/ssl/ca.pem --cert-file=/k8s/etcd/ssl/server.pem --key-file=/k8s/etcd/ssl/server-key.pem --endpoints="https://172.16.0.69:2379,https://172.16.0.70:2379,https://172.16.0.71" member list
+/k8s/etcd/bin/etcdctl \
+--ca-file=/k8s/etcd/ssl/ca.pem \
+--cert-file=/k8s/etcd/ssl/server.pem \
+--key-file=/k8s/etcd/ssl/server-key.pem \
+--endpoints="https://172.16.0.69:2379,https://172.16.0.70:2379,https://172.16.0.71" \
+member list
 
 #查看集群健康
-/k8s/etcd/bin/etcdctl --ca-file=/k8s/etcd/ssl/ca.pem --cert-file=/k8s/etcd/ssl/server.pem --key-file=/k8s/etcd/ssl/server-key.pem --endpoints="https://172.16.0.69:2379,https://172.16.0.70:2379,https://172.16.0.71" cluster-health
+/k8s/etcd/bin/etcdctl \
+--ca-file=/k8s/etcd/ssl/ca.pem \
+--cert-file=/k8s/etcd/ssl/server.pem \
+--key-file=/k8s/etcd/ssl/server-key.pem \
+--endpoints="https://172.16.0.69:2379,https://172.16.0.70:2379,https://172.16.0.71" \
+cluster-health
+
+#v3操作命令
+/k8s/etcd/bin/etcdctl \
+--cacert=/k8s/etcd/ssl/ca.pem \
+--cert=/k8s/etcd/ssl/server.pem \
+--key=/k8s/etcd/ssl/server-key.pem \
+--endpoints="https://172.16.0.69:2379,https://172.16.0.70:2379,https://172.16.0.71:2379" \
+member list
 ```
 *一般故障处理步骤*：
 - etcdctl member remove ID
@@ -176,13 +222,14 @@ kubectl apply -f http://mirror.faasx.com/k8s/canal/v3.3/canal.yaml
 kubectl get cs
 kubectl get nodes --all-namespaces
 kubectl get services --all-namespaces
-
+kubeadm reset #卸载集群时，master，node都要执行
 ```
 
 11. docker私有库继承到k8s
 ```
 kubectl create secret docker-registry lrj-alyun --docker-server=registry.cn-beijing.aliyuncs.com --docker-username=***** --docker-password=****** --docker-email=sunny_lrj@yeah.net 
 ```
+
 12. etcd管理面板 
 ```
 #https://github.com/evildecay/etcdkeeper
@@ -218,7 +265,27 @@ showmount -e 172.16.0.69
 
 #挂载磁盘
 mount -t nfs -o nolock k8s-master:/k8s/kubernets/data /k8s_data
+```
 
+14. confd产生配置文件
+```
+ confd -onetime -backend etcdv3 -node https://172.16.0.69:2379 \
+ -client-ca-keys /k8s/etcd/ssl/ca.pem \
+ -client-cert /k8s/etcd/ssl/server.pem \
+ -client-key /k8s/etcd/ssl/server-key.pem 
+```
+
+
+15. traefik支持https
+```
+kubectl create secret generic hicoffice-cert \
+--from-file=/k8s/kubernets/data/http-ssl/hi-coffice/STAR.hi-coffice.com.crt \
+--from-file=/k8s/kubernets/data/http-ssl/hi-coffice/STAR.hi-coffice.com.key \
+-n kube-system
+
+kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
+      
+```
 
 
 ```
