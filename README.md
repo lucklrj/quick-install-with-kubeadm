@@ -10,29 +10,6 @@ k8s-node-1 | 172.16.0.70|-|
 k8s-node-2 | 172.16.0.71|-|
 
 
-##### 百度k8s环境 
-https://cloud.baidu.com 15882002095
-主机名  | 内网ip | 外网ip |
-:---|:---:|:---:|
-k8s-master| 172.16.0.69 |106.13.26.221|
-k8s-node-1 | 172.16.0.70|-|
-k8s-node-2 | 172.16.0.71|-|
-
-*etcd面板账号*  
-etcd-admin  
-Fx86F821Vmsr
-
-*jenkis账号*
-admin  
-os1Kh8e1jgwWXCRh
-
-*百度 镜像仓库密码*  
-[访问地址](https://console.bce.baidu.com/cce/?_=1561777471301#/cce/image/list)  
-账号：hicoffice  
-密码：GA%#xh@@bD@DwOJ4j
-
---------
-
 1. 更新语言
 ```
 /etc/environment
