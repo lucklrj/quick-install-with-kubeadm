@@ -1,0 +1,68 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd-manage
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: etcd-manage
+    spec:
+      imagePullSecrets:
+        - name: baidu-docker-repo
+      containers:
+      - name: etcd-manage
+        image: hub.baidubce.com/tool/etcd-manage
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /k8s/etcd/ssl
+          name: etcd-ssl
+        - mountPath: /app/config/cfg.toml
+          name: etcd-config
+          #subPath: cfg.toml
+      volumes:
+      - name: etcd-ssl
+        hostPath:
+          path: /k8s/etcd/ssl
+      - name: etcd-config
+        hostPath:
+          path: /k8s_data/config/etcd-ui/etcd-manage/cfg.toml
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-manage
+  namespace: default
+  labels:
+    app: etcd-manage
+spec:
+  ports:
+  - name: etcd-manage
+    protocol: TCP
+    port: 80
+    targetPort: 8888
+  selector:
+    app: etcd-manage
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: etcd-manage
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    ingress.kubernetes.io/auth-type: "basic"
+    ingress.kubernetes.io/auth-secret: "my-secret"
+spec:
+  rules:
+  - host: etcd-manage.hi-coffice.com
+    http:
+      paths:
+      - backend:
+          serviceName: etcd-manage
+          servicePort: 80

@@ -1,0 +1,66 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd-ui
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: etcd-ui
+    spec:
+      containers:
+      - name: etcd-ui
+        image: soyking/e3w
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /k8s/etcd/ssl
+          name: etcd-ssl
+        - mountPath: /app/conf/config.default.ini 
+          name: etcd-config
+          #subPath: config.default.ini
+      volumes:
+      - name: etcd-ssl
+        hostPath:
+          path: /k8s/etcd/ssl
+      - name: etcd-config
+        hostPath:
+          path: /k8s_data/config/etcd-ui/e3w//config.default.ini
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-ui
+  namespace: default
+  labels:
+    app: etcd-ui
+spec:
+  ports:
+  - name: etcd-ui
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  selector:
+    app: etcd-ui
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: etcd-ui
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    ingress.kubernetes.io/auth-type: "basic"
+    ingress.kubernetes.io/auth-secret: "my-secret"
+spec:
+  rules:
+  - host: etcd-ui.hi-coffice.com
+    http:
+      paths:
+      - backend:
+          serviceName: etcd-ui
+          servicePort: 80

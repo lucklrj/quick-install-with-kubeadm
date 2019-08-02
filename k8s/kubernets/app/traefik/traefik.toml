@@ -8,5 +8,5 @@ defaultEntryPoints = ["http","https"]
   address = ":443"
     [entryPoints.https.tls]
       [[entryPoints.https.tls.certificates]]
-      certFile = "/ssl/yours.crt"
-      keyFile = "/ssl/yours.key"
+      certFile = "/ssl/STAR.hi-coffice.com.crt"
+      keyFile = "/ssl/STAR.hi-coffice.com.key"

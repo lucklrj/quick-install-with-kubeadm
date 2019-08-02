@@ -1,0 +1,68 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: jenkins
+  labels:
+    k8s-app: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: jenkins
+  template:
+    metadata:
+      labels:
+        k8s-app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins
+        #image: registry.cn-beijing.aliyuncs.com/jenkins-ops/jenkins:lts-alpine
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        ports:
+        - containerPort: 8080 
+          name: web
+        - containerPort: 50000
+          name: agent
+      volumes:
+        - name: jenkins-home
+          hostPath:
+            path: /k8s_data/jenkins_home
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: jenkins
+  name: jenkins
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      name: web
+      targetPort: 8080
+    - port: 50000
+      name: agent
+      targetPort: 50000
+  selector:
+    k8s-app: jenkins
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: jenkins
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: jenkins.hi-coffice.com
+    http:
+      paths:
+      - backend:
+          serviceName: jenkins
+          servicePort: 80
+
+

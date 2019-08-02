@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: php7-deployment
 spec:
-  replicas: 2
+  replicas: 3
   template:
     metadata:
       labels:
@@ -12,9 +12,11 @@ spec:
     spec:
       containers:
       - name: nginx-php7
-        image: skiychan/nginx-php7
+        image: registry.cn-beijing.aliyuncs.com/lucklrj/nginx-php7.2
         ports:
         - containerPort: 80
+      imagePullSecrets:
+      - name: lrj-aliyun
 ---
 kind: Service
 apiVersion: v1
@@ -43,7 +45,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: php7.fanjian8.com
+  - host: php7.hi-coffice.com
     http:
       paths:
       - backend:
