@@ -63,9 +63,12 @@ spec:
       terminationGracePeriodSeconds: 60
       hostNetwork: true
       volumes:
-      - name: ssl
+      - name: A-cert
         secret:
-          secretName: hicoffice-cert
+          secretName: A-cert
+      - name: B-cert
+        secret:
+          secretName: B-cert
       - name: config
         configMap:
           name: traefik-conf
@@ -73,8 +76,10 @@ spec:
       - image: traefik:latest
         name: traefik-ingress-lib
         volumeMounts:
-        - mountPath: "/ssl"
-          name: "ssl"
+        - mountPath: "/ssl/A/"
+          name: "A-cert"
+        - mountPath: "/ssl/B/"
+          name: "B-cert"
         - mountPath: "/config"
           name: "config"
         ports:
