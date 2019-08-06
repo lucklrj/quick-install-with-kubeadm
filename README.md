@@ -256,9 +256,9 @@ mount -t nfs -o nolock k8s-master:/k8s/kubernets/data /k8s_data
 15. traefik支持https
 [参考地址](https://medium.com/@patrickeasters/using-traefik-with-tls-on-kubernetes-cb67fb43a948)
 ```
-kubectl create secret generic hicoffice-cert \
---from-file=/k8s/kubernets/data/http-ssl/hi-coffice/STAR.hi-coffice.com.crt \
---from-file=/k8s/kubernets/data/http-ssl/hi-coffice/STAR.hi-coffice.com.key \
+kubectl create secret generic A-cert \
+--from-file=/k8s/kubernets/data/http-ssl/A/A.com.crt \
+--from-file=/k8s/kubernets/data/http-ssl/A.com.key \
 -n kube-system
 
 kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
