@@ -264,6 +264,60 @@ kubectl create secret generic A-cert \
 kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
       
 ```
+16. k8s系统升级
+```
+#master上执行：
+yum install -y kubeadm-1.15.1  
 
+#查看升级计划
+kubeadm upgrade plan
+
+#升级
+kubeadm upgrade apply v1.15.1
+
+yum install kubectl-1.15.1 kebulet-1.15.1 -y
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+
+#work上运行
+yum install -y kubeadm-1.15.1
+kubectl drain k8s-node-1--ignore-daemonsets //master上运行，该节点上的pod会迁移到其他节点
+
+kubeadm upgrade node config --kubelet-version v1.15.1
+yum install kubectl-1.15.1 kebulet-1.15.1 -y
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+kubectl uncordon k8s-node-1 //master执行，恢复调度到该节点
+
+#其他节点同样操作
 
 ```
+[参考链接](https://blog.csdn.net/weixin_34295316/article/details/91613980)
+
+
+17. 证书更新
+```
+#查看证书到期时间
+kubeadm alpha certs check-expiration
+
+#更新证书
+kubeadm alpha certs renew  all
+```
+
+坑：
+因为是外挂的etcd集群，在命令执行里 ，会提示找不到etcd的证书，比如：
+```
+failed to load existing certificate etcd/healthcheck-client: open /etc/kubernetes/pki/etcd/healthcheck-client.crt: no such file or directory
+
+failure loading etcd/ca certificate authority: failed to load key: couldn't load the private key file
+
+failed to load existing certificate etcd/peer: open /etc/kubernetes/pki/etcd/peer.crt: no such file or directory
+
+/etc/kubernetes/pki/etcd/ca.key: open /etc/kubernetes/pki/etcd/ca.key: no such file or directory
+```
+此时只需要把之前的etcd证书，ca证书按报错提示的名字复制到相关目录下。
+
