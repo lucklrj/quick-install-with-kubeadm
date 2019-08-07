@@ -164,7 +164,15 @@ member list
 ```
 *一般故障处理步骤*：
 - etcdctl member remove ID
-- etcdctl member add ID url
+- etcdctl member add NAME url:2380
+- 修改故障etcd配置：
+```
+CD_INITIAL_CLUSTER_STATE=existing #修改,从new改为existing
+```
+- 运行
+```
+systemctl daemon-reload
+```
 - 启动故障etcd
 
 9. 安装k8s  
