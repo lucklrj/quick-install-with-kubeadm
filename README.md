@@ -329,3 +329,11 @@ failed to load existing certificate etcd/peer: open /etc/kubernetes/pki/etcd/pee
 ```
 此时只需要把之前的etcd证书，ca证书按报错提示的名字复制到相关目录下。
 
+
+18. pod回退
+```
+#查看版本记录
+kubectl rollout history deployment deployment_name
+
+kubectl rollout undo deployment deployment_name --to-revision=1
+```
