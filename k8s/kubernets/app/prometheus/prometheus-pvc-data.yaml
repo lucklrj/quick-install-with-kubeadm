@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data
+spec:
+  storageClassName: prometheus-data
+  capacity: 
+    storage: 10Gi  
+  accessModes: 
+    - ReadWriteOnce  
+  persistentVolumeReclaimPolicy: Recycle 
+  nfs:
+    path: /k8s/kubernets/data/prometheus
+    server: 172.16.0.69
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: monitoring  
+spec:
+  accessModes:
+    - ReadWriteOnce 
+  resources:
+    requests:
+      storage: 10Gi 
+  storageClassName: prometheus-data

@@ -1,0 +1,19 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  ports:
+  - name: grafana
+    protocol: TCP
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: grafana
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+
