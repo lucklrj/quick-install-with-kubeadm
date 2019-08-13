@@ -337,3 +337,12 @@ kubectl rollout history deployment deployment_name
 
 kubectl rollout undo deployment deployment_name --to-revision=1
 ```
+
+
+19. prometheus监控  
+拷贝k8s证书到prometheus目录内
+```
+cp /etc/kubernets/pki/* ./XXX
+
+#执行prometheus目录里的yaml
+```

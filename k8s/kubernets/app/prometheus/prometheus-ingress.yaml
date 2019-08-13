@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: prometheus.hi-coffice.com
+  - host: prometheus.xxxxx.com
     http:
       paths:
       - backend:
