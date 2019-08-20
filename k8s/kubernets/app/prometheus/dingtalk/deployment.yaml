@@ -1,0 +1,47 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: webhook-dingtalk
+  name: webhook-dingtalk
+  namespace: monitoring
+  #需要和alertmanager在同一个namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-dingtalk
+  template:
+    metadata:
+      labels:
+        app: webhook-dingtalk
+    spec:
+      containers:
+      - image: hub.baidubce.com/tool/prometheus-webhook-dingtalk
+        name: webhook-dingtalk
+        args:
+        - --ding.profile=monitoring=https://oapi.dingtalk.com/robot/send?access_token=45da092bd3903b3ade60894e96f5c56451d91e7a10325d7d771720b42409b406
+        #上面创建的钉钉机器人hook
+        ports:
+        - containerPort: 8060
+          protocol: TCP
+      imagePullSecrets:
+        - name: baidu-docker-repo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: webhook-dingtalk
+  name: webhook-dingtalk
+  namespace: monitoring
+  #需要和alertmanager在同一个namespace
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8060
+  selector:
+    app: webhook-dingtalk
+  type: ClusterIP 

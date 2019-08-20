@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-alertmanager
+spec:
+  storageClassName: prometheus-alertmanager
+  capacity: 
+    storage: 2Gi  
+  accessModes: 
+    - ReadWriteOnce  
+  persistentVolumeReclaimPolicy: Recycle 
+  nfs:
+    path: /k8s/kubernets/data/alertmanager
+    server: 172.16.0.69
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-alertmanager
+  namespace: monitoring  
+spec:
+  accessModes:
+    - ReadWriteOnce 
+  resources:
+    requests:
+      storage: 2Gi 
+  storageClassName: prometheus-alertmanager

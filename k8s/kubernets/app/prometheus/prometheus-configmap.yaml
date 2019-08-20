@@ -25,6 +25,13 @@ data:
         - __meta_kubernetes_namespace
         - __meta_kubernetes_service_name
         - __meta_kubernetes_endpoint_port_name
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        cert_file: /data/ssl/apiserver-kubelet-client.crt
+        key_file:  /data/ssl/apiserver-kubelet-client.key
+        insecure_skip_verify: true
+      #bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
 
     - job_name: kubernetes-nodes-kubelet
       kubernetes_sd_configs:
@@ -32,6 +39,13 @@ data:
       relabel_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        cert_file: /data/ssl/apiserver-kubelet-client.crt
+        key_file:  /data/ssl/apiserver-kubelet-client.key
+        insecure_skip_verify: true
+      #bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
 
     - job_name: kubernetes-nodes-cadvisor
       kubernetes_sd_configs:
@@ -41,7 +55,14 @@ data:
         regex: __meta_kubernetes_node_label_(.+)
       - target_label: __metrics_path__
         replacement: /metrics/cadvisor
-
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        cert_file: /data/ssl/apiserver-kubelet-client.crt
+        key_file:  /data/ssl/apiserver-kubelet-client.key
+        insecure_skip_verify: true
+      #bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      
     - job_name: kubernetes-service-endpoints
       kubernetes_sd_configs:
       - role: endpoints
@@ -138,7 +159,7 @@ data:
         - __meta_kubernetes_pod_name
         target_label: kubernetes_pod_name
     alerting:
-      alertmanagers:
+      alertmanagers:      
       - kubernetes_sd_configs:
           - role: pod
         relabel_configs:
@@ -151,3 +172,55 @@ data:
         - source_labels: [__meta_kubernetes_pod_container_port_number]
           regex:
           action: drop
+      - static_configs:
+        - targets:
+          - alertmanager:80
+    rule_files:
+    - "/etc/config/rules.yml"
+  rules.yml: |
+    groups:
+    - name: example
+      rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
+      - alert: NodeMemoryUsage
+        expr: (sum(node_memory_MemTotal) - sum(node_memory_MemFree+node_memory_Buffers+node_memory_Cached) ) / sum(node_memory_MemTotal) * 100 > 20
+        for: 2m
+        labels:
+          team: node
+        annotations:
+          summary: "{{$labels.instance}}: High Memory usage detected"
+          description: "{{$labels.instance}}: Memory usage is above 20% (current value is: {{ $value }}"
+      - alert: 内存使用率过高
+        expr: 100-(node_memory_Buffers_bytes+node_memory_Cached_bytes+node_memory_MemFree_bytes)/node_memory_MemTotal_bytes*100 > 30 
+        for: 1m  # 告警持续时间，超过这个时间才会发送给alertmanager
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} use a lot of memory "
+          description: "{{ $labels.instance }} of job {{$labels.job}}memory use more than 80%, now use:[{{ $value }}]."
+
+      - alert: cpu使用率过高
+        expr: 100-avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by(instance)*100 > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} use a lof of  cpu"
+          description: "{{ $labels.instance }} of job {{$labels.job}}cpu use more than 80%,now use:[{{ $value }}]."
+      
+      - alert: node load1 too hight
+        expr: node_load1 >0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance {{ $labels.instance }} load1 to hright"
+          description: "{{ $labels.instance }} of job {{$labels.job}}load1 too high,now :[{{ $value }}]."
+          
