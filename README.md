@@ -225,7 +225,9 @@ yum -y install httpd-tools
 htpasswd -c ./auth myusername
 kubectl create secret generic mysecret --from-file auth --namespace=monitoring 
 
-参看etcd-ui.yaml
+#ingress采用basic-auth验证：参看etcd-ui.yaml，生成k8s的secret
+htpasswd -bc auth username password
+kubectl create secret generic my-secret --from-file=/path/auth
 ```
 
 13. NFS挂载
