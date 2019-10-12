@@ -1,0 +1,60 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: shortlink-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: shortlink
+    spec:
+      containers:
+      - name: shortlink
+        image: hub.baidubce.com/tool/short_link_server
+        volumeMounts:
+        - name: shortlink-config
+          mountPath: /app
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: baidu-docker-repo
+      volumes:
+        - name: shortlink-config
+          configMap:
+            name: shortlink-config
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: shortlink-service
+  namespace: default
+  labels:
+    app: shortlink
+spec:
+  ports:
+  - name: shortlink
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: shortlink
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: shortlink-service
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: s.bgt.work
+    http:
+      paths:
+      - backend:
+          serviceName: shortlink-service
+          servicePort: 80
