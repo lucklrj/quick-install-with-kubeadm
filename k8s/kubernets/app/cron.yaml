@@ -1,0 +1,69 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: cron
+  labels:
+    k8s-app: cron
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: cron
+  template:
+    metadata:
+      labels:
+        k8s-app: cron
+    spec:
+      imagePullSecrets:
+        - name: baidu-docker-repo
+      containers:
+      - name: cron
+        image: hub.baidubce.com/tool/cron
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: cron-config
+          mountPath: /app/conf
+        - mountPath: /k8s/etcd/ssl
+          name: etcd-ssl    
+        ports:
+        - containerPort: 7079 
+          name: web
+      volumes:
+        - name: cron-config
+          hostPath:
+            path: /k8s_data/config/cron/conf
+        - name: etcd-ssl
+          hostPath:
+            path: /k8s/etcd/ssl    
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: cron
+  name: cron
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      name: web
+      targetPort: 7079
+  selector:
+    k8s-app: cron
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cron
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: cron.hi-coffice.com
+    http:
+      paths:
+      - backend:
+          serviceName: cron
+          servicePort: 80
+---
+

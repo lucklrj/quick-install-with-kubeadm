@@ -52,7 +52,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: s.bgt.work
+  - host: s.xx.work
     http:
       paths:
       - backend:
