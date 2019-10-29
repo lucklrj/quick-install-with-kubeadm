@@ -59,7 +59,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: cron.hi-coffice.com
+  - host: cron.xxx.com
     http:
       paths:
       - backend:
