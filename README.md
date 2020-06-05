@@ -194,18 +194,27 @@ yum list |grep kube
 
 yum install -y kubelet-1.14.3 kubeadm-1.14.3 kubectl-1.14.3 ipvsadm
 
-#产生初始化配置文件
+#产生初始化配置文件 :100
 kubeadm config print init-default > kubeadm.conf 
 kubeadm init --config kubeadm.conf
 
 #更新网络插件
-kubectl apply -f http://mirror.faasx.com/k8s/canal/v3.3/rbac.yaml
-kubectl apply -f http://mirror.faasx.com/k8s/canal/v3.3/canal.yaml
+kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/rbac.yaml
+kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml
 
 # 开机自动启动
 systemctl status kubelet
 systemctl start kubelet
 ```
+-----
+```
+:100 执行完毕，会展示如下类似的命令
+kubeadm join api-server:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:token-value
+在node机上再执行上述命令，就将node机器加到了网络里了
+
+```
+
 
 10. 常用命令
 ```
