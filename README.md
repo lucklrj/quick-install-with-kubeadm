@@ -201,7 +201,12 @@ kubeadm init --config kubeadm.conf
 #更新网络插件
 kubectl apply -f http://mirror.faasx.com/k8s/canal/v3.3/rbac.yaml
 kubectl apply -f http://mirror.faasx.com/k8s/canal/v3.3/canal.yaml
+
+# 开机自动启动
+systemctl status kubelet
+systemctl start kubelet
 ```
+
 10. 常用命令
 ```
 kubectl get cs
