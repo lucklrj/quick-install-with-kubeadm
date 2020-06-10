@@ -286,6 +286,12 @@ kubectl create secret generic A-cert \
 -n kube-system
 
 kubectl create configmap traefik-conf --from-file=traefik.toml -n kube-system
+
+#给节点打标签，只在bind_node=true上运行
+kubectl label nodes k8s-master bind_domain=1
+
+# 查看具有bind_domain的机器
+kubectl get node -l "bind_domain=1"
       
 ```
 16. k8s系统升级
