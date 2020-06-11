@@ -199,8 +199,8 @@ kubeadm config print init-default > kubeadm.conf
 kubeadm init --config kubeadm.conf
 
 #更新网络插件
-kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/rbac.yaml
-kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml
+kubectl apply /k8s/kubernets/app/Canal/rbac.yaml
+kubectl apply -f /k8s/kubernets/app/Canal/canal.yaml
 
 # 开机自动启动
 systemctl status kubelet
