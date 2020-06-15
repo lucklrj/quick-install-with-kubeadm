@@ -175,6 +175,9 @@ systemctl daemon-reload
 ```
 - 启动故障etcd
 
+#其他工具：etcd数据迁移工具:见 /k8s/kubernets/tools/
+
+
 9. 安装k8s  
 ```
 #新增yum源
