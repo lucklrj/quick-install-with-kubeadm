@@ -1,0 +1,51 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dejavu
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dejavu
+    spec:
+      containers:
+      - name: dejavu
+        image: appbaseio/dejavu
+        ports:
+        - containerPort: 1358
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: dejavu-service
+  namespace: default
+  labels:
+    app: dejavu
+spec:
+  ports:
+  - name: dejavu
+    protocol: TCP
+    port: 80
+    targetPort: 1358
+  selector:
+    app: dejavu
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: dejavu-service
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: es-ui.your-domain.com
+    http:
+      paths:
+      - backend:
+          serviceName: dejavu-service
+          servicePort: 80

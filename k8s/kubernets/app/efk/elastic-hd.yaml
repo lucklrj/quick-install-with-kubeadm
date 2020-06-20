@@ -1,0 +1,51 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: elasti-cd
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: elasti-cd
+    spec:
+      containers:
+      - name: elasti-cd
+        image: containerize/elastichd
+        ports:
+        - containerPort: 9800
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasti-cd-service
+  namespace: default
+  labels:
+    app: elasti-cd
+spec:
+  ports:
+  - name: elasti-cd
+    protocol: TCP
+    port: 80
+    targetPort: 9800
+  selector:
+    app: elasti-cd
+  # Minikube needs NodePort to work.
+  # type: ClusterIP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: elasti-cd-service
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: es-hd.your-domain.com
+    http:
+      paths:
+      - backend:
+          serviceName: elasti-cd-service
+          servicePort: 80
