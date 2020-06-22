@@ -153,6 +153,13 @@ spec:
              value: "true"
            - name: "ES_JAVA_OPTS"
              value: "-Xms1024m -Xmx1024m"
+           - name: "path.data"
+             value: "/usr/share/elasticsearch/data/${POD_NAME}"
+           - name: "POD_NAME"
+             valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
          volumeMounts:
            - name: elasticsearch-data-volume
              mountPath: /usr/share/elasticsearch/data
@@ -163,7 +170,7 @@ spec:
      volumes:
        - name: elasticsearch-data-volume
          hostPath:
-          path: /k8s_data/es
+          path: /data/data/es
 
 ---
 kind: Service
@@ -179,4 +186,5 @@ spec:
      targetPort: 9200
  selector:
    app: elasticsearch
+
 
