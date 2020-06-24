@@ -2,74 +2,67 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongo
+  namespace: default
   labels:
-    app: mongo
+    name: mongo
 spec:
   ports:
-  - name: mongo
-    port: 27017
+  - port: 27017
     targetPort: 27017
   clusterIP: None
   selector:
-    app: mongo
----
-apiVersion: v1
-kind: Service
-metadata: 
-  name: mongo-service
-  labels: 
-    app: mongo
-spec: 
-  ports: 
-  - name: mongo-http
-    port: 27017
-  selector: 
-    app: mongo
-  type: NodePort
+    role: mongo
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet
-metadata: 
+metadata:
   name: mongo
-spec: 
-  selector: 
-    matchLabels: 
-      app: mongo
+  namespace: default
+spec:
   serviceName: "mongo"
   replicas: 1
-  podManagementPolicy: Parallel
-  template: 
-    metadata: 
-      labels: 
-        app: mongo
-    spec: 
+  template:
+    metadata:
+      labels:
+        role: mongo
+        environment: prod
+    spec:
       terminationGracePeriodSeconds: 10
-      affinity: 
-         podAntiAffinity: 
-           requiredDuringSchedulingIgnoredDuringExecution: 
-           - labelSelector: 
-               matchExpressions: 
-               - key: "app"
-                 operator: In
-                 values: 
-                 - mongo
-             topologyKey: "kubernetes.io/hostname"
-      containers: 
-      - name: mongo
-        image: registry.cn-beijing.aliyuncs.com/xkd-tool/mongo  
-        command:  
-        - mongod 
-        - "--bind_ip_all"
-        - "--replSet"
-        - rs0
-        ports: 
-        - containerPort: 27017
-        volumeMounts: 
-        - name: mongo-data
-          mountPath: /data/db
+      containers:
+        - name: mongo
+          image: registry.cn-beijing.aliyuncs.com/xkd-tool/mongo
+          command:
+            - mongod
+            - "--replSet"
+            - rs0
+            - "--bind_ip"
+            - 0.0.0.0
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-persistent-storage
+              mountPath: /data/db
+        - name: mongo-sidecar
+          image: registry.cn-beijing.aliyuncs.com/xkd-tool/mongo-k8s-sidecar
+          env:
+            - name: MONGO_SIDECAR_POD_LABELS
+              value: "role=mongo,environment=prod"
       imagePullSecrets:
-      - name: ali-repo   
+      - name: ali-repo              
       volumes:
-      - name: mongo-data
+      - name: mongo-persistent-storage
         hostPath:
           path: /data/data/mongdb
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: mongo-default-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default          
