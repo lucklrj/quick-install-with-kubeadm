@@ -9,7 +9,7 @@ metadata:
     ingress.kubernetes.io/auth-secret: "kibana-admin"
 spec:
   rules:
-  - host: kibana.domain.com
+  - host: kibana.hi-coffice.com
     http:
       paths:
       - backend:

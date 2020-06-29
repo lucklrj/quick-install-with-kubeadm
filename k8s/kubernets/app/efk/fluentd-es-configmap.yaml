@@ -460,7 +460,7 @@ data:
       @log_level info
       type_name _doc
       include_tag_key true
-      host elasticsearch-logging
+      host elasticsearch-service
       port 9200
       logstash_format true
       <buffer>

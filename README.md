@@ -341,6 +341,7 @@ kubeadm alpha certs check-expiration
 kubeadm alpha certs renew  all
 
 # 更新配置文件
+
 kubeadm init phase kubeconfig all --config /etc/kubernetes/kubeadm-config.yaml
 cp /etc/kubernetes/admin.conf ~/.kube/config 
 ```
