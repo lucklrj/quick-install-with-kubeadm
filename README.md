@@ -225,6 +225,10 @@ kubectl get cs
 kubectl get nodes --all-namespaces
 kubectl get services --all-namespaces
 kubeadm reset #卸载集群时，master，node都要执行
+kubectl drain node_name --delete-local-data --force --ignore-daemonsets # 驱逐node，原来的pod迁移到其他node
+kubectl uncordon node_name # 恢复调度
+kubectl cordon node_name #禁止调度，原来的pod不迁移
+
 ```
 
 11. docker私有库继承到k8s
