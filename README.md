@@ -366,10 +366,12 @@ failed to load existing certificate etcd/peer: open /etc/kubernetes/pki/etcd/pee
 
 18. pod回退
 ```
-#查看版本记录
+#查看版本记录，并退回到指定版本
 kubectl rollout history deployment deployment_name
-
 kubectl rollout undo deployment deployment_name --to-revision=1
+
+退回上一个版本
+kubectl rollout undo deployment/nginx-deployment
 ```
 
 
