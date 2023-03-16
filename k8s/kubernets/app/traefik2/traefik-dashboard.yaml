@@ -1,0 +1,19 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: kube-system
+spec:
+  entryPoints:
+  - web
+  routes:
+  - match: Host(`traefik.demo.com`) 
+    kind: Rule
+    middlewares:
+    - name: traefik-dashbroad-basic-auth
+      namespace: kube-system
+    services:
+    - name: api@internal
+      kind: TraefikService
+
+
