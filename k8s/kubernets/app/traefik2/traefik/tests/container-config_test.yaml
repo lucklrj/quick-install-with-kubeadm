@@ -1,0 +1,197 @@
+suite: Main Container configuration
+templates:
+  - deployment.yaml
+chart:
+  appVersion: v2.0.0
+tests:
+  - it: should have the default Docker image when no value is specified
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: traefik:v2.0.0
+  - it: should change image when image.tag value is specified
+    set:
+      image:
+        tag: v2.0.0-beta1
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: traefik:v2.0.0-beta1
+  - it: should change image when image.repository value is specified
+    set:
+      image:
+        repository: traefik/traefik
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: traefik/traefik:v2.0.0
+
+  - it: should have no resource limit by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].resources
+  - it: should have a custom resource limit when specified
+    set:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "50Mi"
+        limits:
+          cpu: "300m"
+          memory: "150Mi"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "100m"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "50Mi"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "300m"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "150Mi"
+  - it: should not have data volumeMount subPath by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].volumeMounts[0].subPath
+  - it: should have data volumeMount subPath when specified in config
+    set:
+      persistence:
+        subPath: "subdir/traefik"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].subPath
+          value: "subdir/traefik"
+  - it: should have templated config map volume
+    set:
+      volumes:
+        - name: '{{ printf "%s-custom-config" .Release.Name }}'
+          mountPath: /etc/traefik
+          type: configMap
+        - name: 'non-templated'
+          mountPath: /etc/non-templated
+          type: configMap
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[2].name
+          value: "RELEASE-NAME-custom-config"
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[3].name
+          value: "non-templated"
+      - equal:
+          path: spec.template.spec.volumes[2].name
+          value: "RELEASE-NAME-custom-config"
+      - equal:
+          path: spec.template.spec.volumes[2].configMap.name
+          value: "RELEASE-NAME-custom-config"
+      - equal:
+          path: spec.template.spec.volumes[3].name
+          value: "non-templated"
+      - equal:
+          path: spec.template.spec.volumes[3].configMap.name
+          value: "non-templated"
+  - it: should have templated secret volume
+    set:
+      volumes:
+        - name: '{{ printf "%s-custom-secret" .Release.Name }}'
+          mountPath: /etc/secret
+          type: secret
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[2].name
+          value: "RELEASE-NAME-custom-secret"
+      - equal:
+          path: spec.template.spec.volumes[2].name
+          value: "RELEASE-NAME-custom-secret"
+      - equal:
+          path: spec.template.spec.volumes[2].secret.secretName
+          value: "RELEASE-NAME-custom-secret"
+  - it: should set a podAntiaffinity
+    set:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - whatever
+            topologyKey: kubernetes.io/hostname
+    asserts:
+      - equal:
+          path: spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].topologyKey
+          value: kubernetes.io/hostname
+      - equal:
+          path: spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].key
+          value: app
+      - equal:
+          path: spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0].values[0]
+          value: whatever
+  - it: should set a topologySpreadConstraints on kubernetes >= 1.19
+    capabilities:
+      majorVersion: 1
+      minorVersion: 19
+    set:
+      topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app: whatever
+        maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+    asserts:
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].topologyKey
+          value: kubernetes.io/hostname
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].labelSelector.matchLabels.app
+          value: whatever
+  - it: should set a templated topologySpreadConstraints on kubernetes >= 1.19
+    capabilities:
+      majorVersion: 1
+      minorVersion: 19
+    set:
+      topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app: '{{ template "traefik.name" . }}'
+        maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+    asserts:
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].topologyKey
+          value: kubernetes.io/hostname
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[0].labelSelector.matchLabels.app
+          value: traefik
+  - it: should set fail to set topologySpreadConstraints on kubernetes 1.18
+    capabilities:
+      majorVersion: 1
+      minorVersion: 18
+    set:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+    asserts:
+      - failedTemplate:
+          errorMessage: "topologySpreadConstraints are supported only on kubernetes >= v1.19"
+  - it: should set instance label to release.name-release.namespace if no override is set
+    asserts:
+      - isSubset:
+          path: spec.selector
+          content:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+              app.kubernetes.io/instance: RELEASE-NAME-NAMESPACE
+  - it: should set instance label to instanceLabelOverride if set
+    set:
+      instanceLabelOverride: traefik
+    asserts:
+      - isSubset:
+          path: spec.selector
+          content:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+              app.kubernetes.io/instance: traefik

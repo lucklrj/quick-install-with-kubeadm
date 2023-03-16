@@ -1,0 +1,107 @@
+suite: ServiceMonitor configuration
+templates:
+  - servicemonitor.yaml
+tests:
+  - it: should not provide ServiceMonitor by default
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: should fail to provide ServiceMonitor without the API
+    values:
+      - ./values/servicemonitor.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: "You have to deploy monitoring.coreos.com/v1 first"
+  - it: should succeed to provide ServiceMonitor without the API when disabling API Check
+    values:
+      - ./values/servicemonitor.yaml
+    set:
+      metrics:
+        prometheus:
+          disableAPICheck: true
+    asserts:
+      - hasDocuments:
+          count: 1
+  - it: should successfully provide ServiceMonitor with example values
+    values:
+      - ./values/servicemonitor.yaml
+    capabilities:
+      apiVersions:
+        - monitoring.coreos.com/v1
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.jobLabel
+          value: another-label
+      - contains:
+          path: spec.endpoints
+          content:
+            port: metrics
+            path: /metrics
+            enableHttp2: true
+            followRedirects: true
+            honorLabels: true
+            honorTimestamps: true
+            scrapeTimeout: 5s
+            interval: 30s
+            metricRelabelings:
+            - action: drop
+              regex: ^fluentd_output_status_buffer_(oldest|newest)_.+
+              replacement: $1
+              separator: ;
+              sourceLabels:
+              - __name__
+            relabelings:
+            - action: replace
+              regex: ^(.*)$
+              replacement: $1
+              separator: ;
+              sourceLabels:
+              - __meta_kubernetes_pod_node_name
+              targetLabel: nodename
+      - equal:
+          path: spec.namespaceSelector.any
+          value: true
+      - equal:
+          path: spec.selector.matchLabels.[app.kubernetes.io/name]
+          value: traefik
+  - it: should provide ServiceMonitor pointing to metrics service, when hub is disabled and prometheus.service.enabled is true
+    values:
+      - ./values/servicemonitor.yaml
+    capabilities:
+      apiVersions:
+        - monitoring.coreos.com/v1
+    set:
+      hub:
+        enabled: false
+      metrics:
+        prometheus:
+          service:
+            enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.selector.matchLabels.[app.kubernetes.io/component]
+          value: metrics
+  - it: should provide ServiceMonitor pointing to hub service, when hub is enabled
+    values:
+      - ./values/servicemonitor.yaml
+    capabilities:
+      apiVersions:
+        - monitoring.coreos.com/v1
+    set:
+      hub:
+        enabled: true
+      metrics:
+        prometheus:
+          service:
+            enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isNotSubset:
+          path: spec.selector.matchLabels
+          content:
+            app.kubernetes.io/component: metrics

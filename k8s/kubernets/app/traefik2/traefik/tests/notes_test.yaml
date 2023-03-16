@@ -1,0 +1,102 @@
+suite: NOTES.txt output
+templates:
+  - NOTES.txt
+chart:
+  appVersion: 2.0.0
+tests:
+  - it: should use helm managed namespace in release notes output
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy 2.0.0 has been deployed successfully
+            on NAMESPACE namespace !
+  - it: should use helm managed namespace in release notes output
+    set:
+      namespaceOverride: "traefik-ns-override"
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy 2.0.0 has been deployed successfully
+            on traefik-ns-override namespace !
+
+  - it: should output hub related notes
+    set:
+      hub:
+        enabled: true
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy 2.0.0 has been deployed successfully
+            on NAMESPACE namespace !
+
+            Traefik Hub integration is enabled ! With your specific parameters,
+            `metricsURL`, `tunnelHost` and `tunnelPort` needs to be set accordingly
+            on hub-agent Helm Chart. Based on this Chart, it should be:
+
+              --set controllerDeployment.traefik.metricsURL=http://traefik-hub.NAMESPACE.svc.cluster.local:9100/metrics
+              --set tunnelDeployment.traefik.tunnelHost=traefik-hub.NAMESPACE.svc.cluster.local
+              --set tunnelDeployment.traefik.tunnelPort=9901
+
+            See https://doc.traefik.io/traefik-hub/install/#traefik-hub-agent-install-with-helmchart
+
+  - it: should use tag version in release notes output if set
+    set:
+      image:
+        tag: v3.0
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy v3.0 has been deployed successfully
+            on NAMESPACE namespace !
+  - it: should not display a warning when persistence and initContainer are enabled
+    set:
+      persistence:
+        enabled: true
+      deployment:
+        initContainer:
+          - name: volume-permissions
+            image: busybox:1.35
+            command: ["sh", "-c", "touch /data/acme.json && chmod -Rv 600 /data/* && chown 65532:65532 /data/acme.json"]
+            volumeMounts:
+              - name: data
+                mountPath: /data
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy 2.0.0 has been deployed successfully
+            on NAMESPACE namespace !
+  - it: should display warning when enabling persistence without initContainer
+    set:
+      persistence:
+        enabled: true
+    asserts:
+      - equal:
+          path: raw
+          value: |
+
+
+            Traefik Proxy 2.0.0 has been deployed successfully
+            on NAMESPACE namespace !
+
+            🚨 When enabling persistence for certificates, permissions on acme.json can be
+            lost when Traefik restarts. You can ensure correct permissions with an
+            initContainer. See https://github.com/traefik/traefik-helm-chart/issues/396 for
+            more info. 🚨

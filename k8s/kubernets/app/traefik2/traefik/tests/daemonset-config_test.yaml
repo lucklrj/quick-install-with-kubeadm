@@ -1,0 +1,144 @@
+suite: DaemonSet configuration
+templates:
+  - daemonset.yaml
+tests:
+  - it: should have a rollingUpdate strategy with default values on k8s > 1.21
+    capabilities:
+      majorVersion: 1
+      minorVersion: 21
+    set:
+      deployment:
+        kind: DaemonSet
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 0
+      - equal:
+          path: spec.updateStrategy.rollingUpdate.maxSurge
+          value: 1
+  - it: should have annotations with specified values
+    set:
+      deployment:
+        kind: DaemonSet
+        annotations:
+          traefik/powpow: annotations
+        podAnnotations:
+          traefik/powpow: podAnnotations
+    asserts:
+      - equal:
+          path: metadata.annotations.traefik/powpow
+          value: annotations
+      - equal:
+          path: spec.template.metadata.annotations.traefik/powpow
+          value: podAnnotations
+  - it: should have labels with specified values
+    set:
+      deployment:
+        kind: DaemonSet
+        labels:
+          traefik/powpow: labels
+        podLabels:
+          traefik/powpow: podLabels
+    asserts:
+      - equal:
+          path: metadata.labels.traefik/powpow
+          value: labels
+      - equal:
+          path: spec.template.metadata.labels.traefik/powpow
+          value: podLabels
+  - it: should have minReadySeconds with specified value
+    set:
+      deployment:
+        kind: DaemonSet
+        minReadySeconds: 30
+    asserts:
+      - equal:
+          path: spec.minReadySeconds
+          value: 30
+  - it: should have revisionHistoryLimit with specified value
+    set:
+      deployment:
+        kind: DaemonSet
+        revisionHistoryLimit: 1
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 1
+  - it: should have a preStop hook with specified values
+    set:
+      deployment:
+        kind: DaemonSet
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 40"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
+          value: ["/bin/sh", "-c", "sleep 40"]
+  - it: should have a postStart hook with specified values
+    set:
+      deployment:
+        kind: DaemonSet
+        lifecycle:
+          postStart:
+            httpGet:
+              path: /ping
+              port: 9000
+              host: localhost
+              scheme: HTTP
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.postStart.httpGet.path
+          value: /ping
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.postStart.httpGet.port
+          value: 9000
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.postStart.httpGet.host
+          value: localhost
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.postStart.httpGet.scheme
+          value: HTTP
+  - it: should fail when hostNetwork and default maxUnavailable 0
+    set:
+      deployment:
+        kind: DaemonSet
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 0
+      hostNetwork: true
+    asserts:
+      - failedTemplate:
+          errorMessage: "maxUnavailable should be greater than 1 when using hostNetwork."
+  - it: should have an OnDelete updateStrategy when set
+    set:
+      deployment:
+        kind: DaemonSet
+      updateStrategy:
+        type: OnDelete
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: OnDelete
+  - it: should use helm managed namespace as default behavior
+    set:
+      deployment:
+        kind: DaemonSet
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+  - it: should accept overridden namespace
+    set:
+      namespaceOverride: "traefik-ns-override"
+      deployment:
+        kind: DaemonSet
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: "traefik-ns-override"

@@ -1,0 +1,58 @@
+deployment:
+  enabled: true
+  kind: Deployment
+ 
+ingressClass:
+  enabled: true
+  isDefaultClass: false
+ 
+ingressRoute:  # 不用自动创建，我们自己处理
+  dashboard:
+    enabled: false
+ 
+#
+# 配置 providers
+#
+providers:
+  kubernetesCRD:  # 开启 crd provider
+    enabled: true
+    allowCrossNamespace: true  # 是否允许跨命名空间
+    allowExternalNameServices: true  # 是否允许使用 ExternalName 的服务
+ 
+  kubernetesIngress:  # 开启 ingress provider
+    enabled: true
+    allowExternalNameServices: true
+ 
+logs:
+  general:
+    level: DEBUG
+  access:
+    enabled: true
+ 
+ports:
+  web:
+    port: 8000
+    hostPort: 80  # 使用 hostport 模式
+ 
+  websecure:
+    port: 8443
+    hostPort: 443  # 使用 hostport 模式
+  
+  gate:
+    port: 5001
+    hostPort: 5001  # 使用 hostport 模式    
+ 
+  metrics:
+    port: 9100
+    hostPort: 9101
+# 监听1024以下的端口需要修改traefik默认的安全上下文配置
+securityContext:
+  capabilities:
+    drop: []
+  readOnlyRootFilesystem: false
+  runAsGroup: 0
+  runAsNonRoot: false
+  runAsUser: 0
+ 
+nodeSelector:   # 固定到边缘节点
+  kubernetes.io/hostname: "test-2"

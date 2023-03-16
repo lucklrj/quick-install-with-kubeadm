@@ -1,0 +1,231 @@
+suite: RBAC configuration
+templates:
+  - rbac/clusterrole.yaml
+  - rbac/clusterrolebinding.yaml
+  - rbac/role.yaml
+  - rbac/rolebinding.yaml
+  - rbac/serviceaccount.yaml
+  - deployment.yaml
+tests:
+  - it: should create default RBAC related objects
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: rbac/clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: rbac/clusterrolebinding.yaml
+      - hasDocuments:
+          count: 0
+        template: rbac/role.yaml
+      - hasDocuments:
+          count: 0
+        template: rbac/rolebinding.yaml
+      - isKind:
+          of: ServiceAccount
+        template: rbac/serviceaccount.yaml
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-traefik
+        template: rbac/serviceaccount.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: RELEASE-NAME-traefik
+        template: deployment.yaml
+      - equal:
+          path: subjects[0].name
+          value: RELEASE-NAME-traefik
+        template: rbac/clusterrolebinding.yaml
+  - it: should not create RBAC related objects when disabled
+    set:
+      rbac:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: rbac/clusterrole.yaml
+      - hasDocuments:
+          count: 0
+        template: rbac/clusterrolebinding.yaml
+      - hasDocuments:
+          count: 0
+        template: rbac/role.yaml
+      - hasDocuments:
+          count: 0
+        template: rbac/rolebinding.yaml
+  - it: should create RBAC related objects at namespace scope
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - isKind:
+          of: Role
+        template: rbac/role.yaml
+      - isKind:
+          of: RoleBinding
+        template: rbac/rolebinding.yaml
+      - notContains:
+          path: rules
+          content:
+            - apiGroups:
+                - extensions
+                - networking.k8s.io
+              resources:
+                - ingresses
+              verbs:
+                - get
+                - list
+                - watch
+        template: rbac/clusterrole.yaml
+      - matchRegex:
+          path: metadata.name
+          pattern: ^.*-NAMESPACE$
+        template: rbac/clusterrole.yaml
+      - matchRegex:
+          path: metadata.name
+          pattern: ^.*-NAMESPACE$
+        template: rbac/clusterrolebinding.yaml
+
+  - it: should use existing ServiceAccount
+    set:
+      serviceAccount:
+        name: foobar
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: rbac/serviceaccount.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: foobar
+        template: deployment.yaml
+      - equal:
+          path: subjects[0].name
+          value: foobar
+        template: rbac/clusterrolebinding.yaml
+  - it: ClusterRole should not be able to update ingresses/status when kubernetesIngress is disabled
+    set:
+      providers:
+        kubernetesIngress:
+          enabled: false
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            - apiGroups:
+                - extensions
+                - networking.k8s.io
+              resources:
+                - ingresses/status
+              verbs:
+                - update
+        template: rbac/clusterrole.yaml
+  - it: ClusterRole should not be able to read CRDs when kubernetesCRD is disabled
+    set:
+      providers:
+        kubernetesCRD:
+          enabled: false
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            - apiGroups:
+                - traefik.containo.us
+              resources:
+                - ingressroutes
+                - ingressroutetcps
+                - ingressrouteudps
+                - middlewares
+                - middlewaretcps
+                - tlsoptions
+                - tlsstores
+                - traefikservices
+                - serverstransports
+              verbs:
+                - get
+                - list
+                - watch
+        template: rbac/clusterrole.yaml
+  - it: "ClusterRole should not have aggregate-to-admin label by default"
+    template: rbac/clusterrole.yaml
+    asserts:
+      - notEqual:
+          path: metadata.labels.[rbac.authorization.k8s.io/aggregate-to-admin]
+          value: "true"
+        template: rbac/clusterrole.yaml
+  - it: "ClusterRole should be configurable with multiples aggregate-to- label"
+    set:
+      rbac:
+        aggregateTo: [ "admin", "edit" ]
+    template: rbac/clusterrole.yaml
+    asserts:
+      - equal:
+          path: metadata.labels.[rbac.authorization.k8s.io/aggregate-to-admin]
+          value: "true"
+      - equal:
+          path: metadata.labels.[rbac.authorization.k8s.io/aggregate-to-edit]
+          value: "true"
+  - it: should use helm managed namespace as default behavior
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+        template: rbac/role.yaml
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+        template: rbac/serviceaccount.yaml
+  - it: should accept overridden namespace
+    set:
+      namespaceOverride: "traefik-ns-override"
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: "traefik-ns-override"
+        template: rbac/role.yaml
+      - equal:
+          path: metadata.namespace
+          value: "traefik-ns-override"
+        template: rbac/serviceaccount.yaml
+  - it: should use helm managed namespace for clusterrolebinding sa
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: subjects[0].namespace
+          value: NAMESPACE
+        template: rbac/clusterrolebinding.yaml
+  - it: should accept overridden namespace for clusterrolebinding sa
+    set:
+      namespaceOverride: "traefik-ns-override"
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: subjects[0].namespace
+          value: "traefik-ns-override"
+        template: rbac/clusterrolebinding.yaml
+  - it: should use helm managed namespace for rolebinding sa
+    set:
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: subjects[0].namespace
+          value: NAMESPACE
+        template: rbac/rolebinding.yaml
+  - it: should accept overridden namespace for rolebinding sa
+    set:
+      namespaceOverride: "traefik-ns-override"
+      rbac:
+        namespaced: true
+    asserts:
+      - equal:
+          path: subjects[0].namespace
+          value: "traefik-ns-override"
+        template: rbac/rolebinding.yaml
